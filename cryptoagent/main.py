@@ -82,6 +82,12 @@ class CryptoAgent:
         self.coingecko_url = (
             "https://api.coingecko.com/api/v3/coins/markets"
         )
+        self.coingecko_trending_url = (
+            "https://api.coingecko.com/api/v3/search/trending"
+        )
+        self.blockbeats_url = (
+            "https://api.theblockbeats.news/v1/open-api/"
+        )
         self.log_tokens = log_tokens
         self.logs = CryptoAgentSchemaLog(
             agent_name=name,
@@ -138,6 +144,29 @@ class CryptoAgent:
         """
         logger.info(f"Fetching data for {coin_id} from CoinGecko.")
         data = self.get_crypto_data_coingecko(coin_id)
+        return data
+
+    def get_trending_token(self) -> Dict:
+        logger.info(f"Fetching trending token from CoinGecko.")
+        try:
+            response = requests.get(self.coingecko_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            if data:
+                return data[0]  # Return the first result
+            else:
+                logger.warning(
+                    f"No data found for {coin_id} on CoinGecko."
+                )
+                return {
+                    "error": f"No data found for {coin_id} on CoinGecko."
+                }
+        except requests.RequestException as e:
+            logger.error(
+                f"Error fetching data from CoinGecko for {coin_id}: {e}"
+            )
+            return {"error": str(e)}
+
         return data
 
     def fetch_and_summarize(
