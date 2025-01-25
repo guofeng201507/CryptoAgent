@@ -149,25 +149,23 @@ class CryptoAgent:
     def get_trending_token(self) -> Dict:
         logger.info(f"Fetching trending token from CoinGecko.")
         try:
-            response = requests.get(self.coingecko_url, params=params)
+            response = requests.get(self.coingecko_trending_url)
             response.raise_for_status()
             data = response.json()
             if data:
-                return data[0]  # Return the first result
+                return data['coins']
             else:
                 logger.warning(
-                    f"No data found for {coin_id} on CoinGecko."
+                    f"No trending data found on CoinGecko."
                 )
                 return {
-                    "error": f"No data found for {coin_id} on CoinGecko."
+                    "error": f"No trending data found on CoinGecko."
                 }
         except requests.RequestException as e:
             logger.error(
-                f"Error fetching data from CoinGecko for {coin_id}: {e}"
+                f"Error fetching trending data from CoinGecko"
             )
             return {"error": str(e)}
-
-        return data
 
     def fetch_and_summarize(
         self, coin_id: str, task: str = None
