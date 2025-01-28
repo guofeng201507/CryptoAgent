@@ -1,46 +1,55 @@
-from openai import OpenAI
+import json
+import os
 
-##### API 配置 #####
-openai_api_key = "ZTNhNWUxMDAwMmJkMzkzM2RiMzE0ZDM0YTk2NTMwMzk5MmI1NzgxNg=="
-openai_api_base = "http://1441377338211808.cn-hangzhou.pai-eas.aliyuncs.com/api/predict/quickstart_20250128_ds_r1_qwen14b/v1"
+import requests
+from dotenv import load_dotenv
 
-client = OpenAI(
-    api_key=openai_api_key,
-    base_url=openai_api_base,
-)
+load_dotenv()
 
-models = client.models.list()
-model = models.data[0].id
-print(model)
+eas_key = os.getenv("EAS_KEY")
+eas_url = os.getenv("EAS_URL")
+
+url = f"{eas_url}/v1/chat/completions"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": eas_key,
+}
 
 
 def main():
-
     stream = True
-
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "你好，介绍一下你自己，越详细越好。",
-                    }
-                ],
-            }
-        ],
-        model=model,
-        max_completion_tokens=1024,
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "你好，请介绍一下你自己。"},
+    ]
+    req = {
+        "messages": messages,
+        "stream": stream,
+        "temperature": 0.0,
+        "top_p": 0.5,
+        "top_k": 10,
+        "max_tokens": 300,
+    }
+    response = requests.post(
+        url,
+        json=req,
+        headers=headers,
         stream=stream,
     )
 
     if stream:
-        for chunk in chat_completion:
-            print(chunk.choices[0].delta.content, end="")
+        for chunk in response.iter_lines(chunk_size=8192, decode_unicode=False):
+            msg = chunk.decode("utf-8")
+            if msg.startswith("data"):
+                info = msg[6:]
+                if info == "[DONE]":
+                    break
+                else:
+                    resp = json.loads(info)
+                    print(resp["choices"][0]["delta"]["content"], end="", flush=True)
     else:
-        result = chat_completion.choices[0].message.content
-        print(result)
+        resp = json.loads(response.text)
+        print(resp["choices"][0]["message"]["content"])
 
 
 if __name__ == "__main__":
